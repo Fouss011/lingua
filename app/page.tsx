@@ -29,6 +29,9 @@ type Entry = {
 };
 
 export default function Studio() {
+  // -------- V4: paging stable index --------
+  const PAGE_SIZE = 20;
+
   // Theme (light par défaut)
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -99,7 +102,7 @@ export default function Studio() {
       if (audioType) params.set("audio_type", audioType);
       if (domain) params.set("domain", domain);
       params.set("page", String(p));
-      params.set("pageSize", "20");
+      params.set("pageSize", String(PAGE_SIZE));
 
       const r = await fetch(`/api/studio?${params.toString()}`, { cache: "no-store" });
       const j = await r.json();
@@ -376,85 +379,93 @@ export default function Studio() {
 
       {/* List */}
       <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-        {sorted.map((en) => (
-          <div
-            key={en.entry_id}
-            style={{
-              border: `1px solid ${cardBorder}`,
-              borderRadius: 12,
-              padding: 12,
-              background: cardBg,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16 }}>
-                  {en.source_lemma} <span style={{ opacity: subtle }}>→</span> {en.translation_primary}
-                </div>
-                <div style={{ fontSize: 12, opacity: subtle }}>
-                  {en.source_language} • {en.domain} • {en.review_status}
-                </div>
-              </div>
-              <div style={{ fontSize: 12, opacity: subtle }}>{new Date(en.created_at).toLocaleString()}</div>
-            </div>
+        {sorted.map((en, idx) => {
+          const n = (page - 1) * PAGE_SIZE + (idx + 1);
+          return (
+            <div
+              key={en.entry_id}
+              style={{
+                border: `1px solid ${cardBorder}`,
+                borderRadius: 12,
+                padding: 12,
+                background: cardBg,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 900, opacity: subtle }}>#{n}</div>
 
-            {(en.example_source || en.example_target) && (
-              <div style={{ marginTop: 8, fontSize: 13 }}>
-                <div>
-                  <b>Ex:</b> {en.example_source || ""}
-                </div>
-                <div style={{ opacity: subtle }}>{en.example_target || ""}</div>
-              </div>
-            )}
-
-            <div style={{ marginTop: 10 }}>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>Audios ({en.audios.length})</div>
-              {en.audios.length === 0 && <div style={{ fontSize: 13, opacity: subtle }}>Aucun audio</div>}
-
-              <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
-                {en.audios.map((a) => (
-                  <div
-                    key={a.audio_id}
-                    style={{
-                      border: `1px solid ${theme === "dark" ? "#222" : "#f0f0f0"}`,
-                      borderRadius: 10,
-                      padding: 10,
-                      background: theme === "dark" ? "#0e0e0e" : "#fafafa",
-                    }}
-                  >
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 16 }}>
+                      {en.source_lemma} <span style={{ opacity: subtle }}>→</span> {en.translation_primary}
+                    </div>
                     <div style={{ fontSize: 12, opacity: subtle }}>
-                      {a.language} • {a.audio_type} • {a.status} • {a.uploaded_by || ""}
+                      {en.source_language} • {en.domain} • {en.review_status}
                     </div>
-
-                    <div style={{ fontSize: 12, opacity: subtle, marginTop: 4 }}>
-                      <code>{a.storage_path}</code>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(a.storage_path)}
-                        style={{
-                          marginLeft: 8,
-                          padding: "2px 8px",
-                          borderRadius: 8,
-                          border: `1px solid ${inputBorder}`,
-                          background: inputBg,
-                          color: "inherit",
-                          cursor: "pointer",
-                        }}
-                      >
-                        copier
-                      </button>
-                    </div>
-
-                    {a.publicUrl ? (
-                      <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 8 }} />
-                    ) : (
-                      <div style={{ color: "crimson", marginTop: 8, fontSize: 13 }}>URL audio indisponible</div>
-                    )}
                   </div>
-                ))}
+                </div>
+
+                <div style={{ fontSize: 12, opacity: subtle }}>{new Date(en.created_at).toLocaleString()}</div>
+              </div>
+
+              {(en.example_source || en.example_target) && (
+                <div style={{ marginTop: 8, fontSize: 13 }}>
+                  <div>
+                    <b>Ex:</b> {en.example_source || ""}
+                  </div>
+                  <div style={{ opacity: subtle }}>{en.example_target || ""}</div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 13 }}>Audios ({en.audios.length})</div>
+                {en.audios.length === 0 && <div style={{ fontSize: 13, opacity: subtle }}>Aucun audio</div>}
+
+                <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+                  {en.audios.map((a) => (
+                    <div
+                      key={a.audio_id}
+                      style={{
+                        border: `1px solid ${theme === "dark" ? "#222" : "#f0f0f0"}`,
+                        borderRadius: 10,
+                        padding: 10,
+                        background: theme === "dark" ? "#0e0e0e" : "#fafafa",
+                      }}
+                    >
+                      <div style={{ fontSize: 12, opacity: subtle }}>
+                        {a.language} • {a.audio_type} • {a.status} • {a.uploaded_by || ""}
+                      </div>
+
+                      <div style={{ fontSize: 12, opacity: subtle, marginTop: 4 }}>
+                        <code>{a.storage_path}</code>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(a.storage_path)}
+                          style={{
+                            marginLeft: 8,
+                            padding: "2px 8px",
+                            borderRadius: 8,
+                            border: `1px solid ${inputBorder}`,
+                            background: inputBg,
+                            color: "inherit",
+                            cursor: "pointer",
+                          }}
+                        >
+                          copier
+                        </button>
+                      </div>
+
+                      {a.publicUrl ? (
+                        <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 8 }} />
+                      ) : (
+                        <div style={{ color: "crimson", marginTop: 8, fontSize: 13 }}>URL audio indisponible</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination */}
