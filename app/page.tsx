@@ -169,6 +169,38 @@ export default function Studio() {
             Accueil
           </button>
 
+          {/* ✅ AJOUT: Apprendre */}
+          <a
+            href="/"
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: `1px solid ${inputBorder}`,
+              background: inputBg,
+              color: "inherit",
+              textDecoration: "none",
+              display: "inline-block",
+            }}
+          >
+            Apprendre
+          </a>
+
+          {/* ✅ AJOUT: Conversation */}
+          <a
+            href="/conversation"
+            style={{
+              padding: "8px 12px",
+              borderRadius: 10,
+              border: `1px solid ${inputBorder}`,
+              background: inputBg,
+              color: "inherit",
+              textDecoration: "none",
+              display: "inline-block",
+            }}
+          >
+            Conversation
+          </a>
+
           <a
             href="/requests"
             style={{
