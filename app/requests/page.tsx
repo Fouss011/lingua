@@ -2,161 +2,187 @@
 
 import { useEffect, useState } from "react";
 
-type ReqRow = {
+type MissingReq = {
   id: string;
   query: string;
-  source_language: string;
-  target_language: string;
-  domain: string;
+  source_language: string | null;
+  target_language: string | null;
+  domain: string | null;
   count: number;
-  created_at: string;
   last_seen_at: string;
+  created_at?: string;
 };
 
 export default function RequestsPage() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [filtersOpen, setFiltersOpen] = useState(true);
+
   const [token, setToken] = useState("");
-  const [savedToken, setSavedToken] = useState("");
+  const [status, setStatus] = useState("");
+  const [items, setItems] = useState<MissingReq[]>([]);
   const [q, setQ] = useState("");
-  const [items, setItems] = useState<ReqRow[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
 
   useEffect(() => {
-    const t = localStorage.getItem("lingua_admin_token") || "";
+    const saved = localStorage.getItem("lingua_theme");
+    if (saved === "dark" || saved === "light") setTheme(saved);
+
+    const t = localStorage.getItem("admin_token") || "";
     setToken(t);
-    setSavedToken(t);
+
+    if (typeof window !== "undefined") {
+      if (window.innerWidth < 640) setFiltersOpen(false);
+    }
   }, []);
 
-  async function load(p = page, t = token) {
-    setLoading(true);
-    setErr("");
+  function toggleTheme() {
+    const next = theme === "light" ? "dark" : "light";
+    setTheme(next);
+    localStorage.setItem("lingua_theme", next);
+    window.dispatchEvent(new StorageEvent("storage", { key: "lingua_theme", newValue: next }));
+  }
+
+  async function load() {
+    setStatus("Chargement...");
+    setItems([]);
+
     try {
       const params = new URLSearchParams();
       if (q.trim()) params.set("q", q.trim());
-      params.set("page", String(p));
-      params.set("pageSize", "20");
 
       const r = await fetch(`/api/requests?${params.toString()}`, {
-        headers: { "x-admin-token": t },
+        headers: { "x-admin-token": token },
         cache: "no-store",
       });
+
       const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || "Load failed");
+      if (!r.ok) throw new Error(j?.error || "Unauthorized");
 
       setItems(j.items || []);
-      setTotal(j.total || 0);
-      setPage(j.page || p);
+      setStatus(`OK • ${j.items?.length || 0} demandes`);
     } catch (e: any) {
-      setItems([]);
-      setTotal(0);
-      setErr(e?.message || "Erreur");
-    } finally {
-      setLoading(false);
+      setStatus(`❌ ${e?.message || "Erreur"}`);
     }
   }
 
-  function saveToken() {
-    localStorage.setItem("lingua_admin_token", token);
-    setSavedToken(token);
-  }
+  const btnStyle: React.CSSProperties = {
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid var(--inputBorder)",
+    background: "var(--inputBg)",
+    color: "var(--fg)",
+    cursor: "pointer",
+  };
+
+  const linkBtnStyle: React.CSSProperties = {
+    ...btnStyle,
+    textDecoration: "none",
+    display: "inline-block",
+  };
+
+  const cardStyle: React.CSSProperties = {
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    borderRadius: 16,
+    padding: 14,
+  };
 
   return (
     <main style={{ padding: 16, maxWidth: 1100, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Demandes manquantes (Admin)</h1>
-        <a href="/" style={{ textDecoration: "underline" }}>← Retour Studio</a>
-      </div>
+      {/* Header */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Demandes (Admin)</h1>
 
-      <div style={{ marginTop: 12, border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-        <div style={{ fontWeight: 700 }}>Token Admin</div>
-        <div style={{ opacity: 0.7, marginTop: 4 }}>
-          Mets le même token que dans <code>.env.local</code> (ADMIN_TOKEN).
+          {/* Row A: navigation */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a href="/" style={linkBtnStyle}>Apprendre</a>
+            <a href="/conversation" style={linkBtnStyle}>Conversation</a>
+            <a href="/requests" style={linkBtnStyle}>Demandes</a>
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <input
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="ADMIN_TOKEN…"
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd", flex: "1 1 320px" }}
-          />
-          <button
-            onClick={saveToken}
-            style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd" }}
-          >
-            Enregistrer
+        {/* Row B: actions */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle}>
+            ☰ Filtres
           </button>
-          <button
-            onClick={() => load(1, token)}
-            style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd" }}
-            disabled={!token}
-          >
+
+          <button onClick={toggleTheme} style={btnStyle}>
+            {theme === "light" ? "🌙 Dark" : "☀️ Light"}
+          </button>
+
+          <button onClick={load} style={{ ...btnStyle, fontWeight: 900 }}>
             Charger
           </button>
         </div>
+      </div>
 
-        {savedToken && (
-          <div style={{ marginTop: 8, opacity: 0.75 }}>
-            Token sauvegardé (localStorage) ✅
+      {filtersOpen && (
+        <div style={{ ...cardStyle, marginTop: 12 }}>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr", maxWidth: 700 }}>
+            <div>
+              <div style={{ fontWeight: 900, marginBottom: 6 }}>Admin token</div>
+              <input
+                value={token}
+                onChange={(e) => {
+                  setToken(e.target.value);
+                  localStorage.setItem("admin_token", e.target.value);
+                }}
+                placeholder="Colle ton ADMIN_TOKEN"
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 12,
+                  border: "1px solid var(--inputBorder)",
+                  background: "var(--inputBg)",
+                  color: "var(--fg)",
+                }}
+              />
+              <div style={{ marginTop: 6, opacity: 0.75, fontSize: 12 }}>
+                Stocké en local sur ton téléphone/PC (localStorage).
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontWeight: 900, marginBottom: 6 }}>Recherche</div>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Filtrer par mot demandé…"
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  borderRadius: 12,
+                  border: "1px solid var(--inputBorder)",
+                  background: "var(--inputBg)",
+                  color: "var(--fg)",
+                }}
+              />
+            </div>
           </div>
-        )}
-      </div>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Rechercher une demande…"
-          style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd", flex: "1 1 320px" }}
-        />
-        <button
-          onClick={() => load(1, token)}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd" }}
-          disabled={!token}
-        >
-          Filtrer
-        </button>
-      </div>
+          <div style={{ marginTop: 10, opacity: 0.8 }}>{status}</div>
+        </div>
+      )}
 
-      <div style={{ marginTop: 10, opacity: 0.7 }}>
-        {loading ? "Chargement…" : `${total} demandes (page ${page})`}
-      </div>
-      {err && <div style={{ marginTop: 8, color: "crimson" }}>{err}</div>}
-
-      <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-        {items.map((x) => (
-          <div key={x.id} style={{ border: "1px solid #eee", borderRadius: 12, padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ fontWeight: 800, fontSize: 16 }}>{x.query}</div>
-              <div style={{ fontWeight: 800 }}>× {x.count}</div>
+      {/* List */}
+      <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
+        {items.map((it, idx) => (
+          <div key={it.id} style={cardStyle}>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "baseline" }}>
+              <div style={{ fontWeight: 900, opacity: 0.75 }}>#{idx + 1}</div>
+              <div style={{ fontWeight: 900, fontSize: 18, lineHeight: 1.2 }}>{it.query}</div>
+              <div style={{ marginLeft: "auto", opacity: 0.75, fontSize: 12 }}>
+                {new Date(it.last_seen_at).toLocaleString()}
+              </div>
             </div>
-            <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-              {x.source_language || "—"} → {x.target_language || "—"} • {x.domain || "—"}
-            </div>
-            <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>
-              last_seen: {new Date(x.last_seen_at).toLocaleString()}
+
+            <div style={{ marginTop: 6, opacity: 0.75, fontSize: 12 }}>
+              {it.source_language || "—"} → {it.target_language || "—"} • {it.domain || "—"} • count:{" "}
+              <b>{it.count}</b>
             </div>
           </div>
         ))}
-      </div>
-
-      <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
-        <button
-          onClick={() => page > 1 && load(page - 1, token)}
-          disabled={!token || page <= 1}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd", opacity: page <= 1 ? 0.5 : 1 }}
-        >
-          ← Précédent
-        </button>
-        <button
-          onClick={() => load(page + 1, token)}
-          disabled={!token}
-          style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid #ddd" }}
-        >
-          Suivant →
-        </button>
       </div>
     </main>
   );
