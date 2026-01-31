@@ -29,7 +29,7 @@ type Entry = {
 };
 
 export default function Studio() {
-  // -------- V4: paging stable index --------
+  // -------- paging stable index --------
   const PAGE_SIZE = 20;
 
   // Theme (light par défaut)
@@ -55,6 +55,14 @@ export default function Studio() {
     document.body.style.background = theme === "dark" ? "#0b0b0b" : "#ffffff";
     document.body.style.color = theme === "dark" ? "#ffffff" : "#000000";
     localStorage.setItem("lingua_theme", theme);
+
+    // variables utiles (pour une cohérence simple dans les pages)
+    document.documentElement.style.setProperty("--bg", theme === "dark" ? "#0b0b0b" : "#ffffff");
+    document.documentElement.style.setProperty("--fg", theme === "dark" ? "#ffffff" : "#000000");
+    document.documentElement.style.setProperty("--card", theme === "dark" ? "#111" : "#fff");
+    document.documentElement.style.setProperty("--border", theme === "dark" ? "#222" : "#eee");
+    document.documentElement.style.setProperty("--inputBg", theme === "dark" ? "#0f0f0f" : "#fff");
+    document.documentElement.style.setProperty("--inputBorder", theme === "dark" ? "#333" : "#ddd");
   }, [theme]);
 
   // Load domains (auto)
@@ -89,6 +97,21 @@ export default function Studio() {
   const inputBg = theme === "dark" ? "#0f0f0f" : "#fff";
   const inputBorder = theme === "dark" ? "#333" : "#ddd";
   const subtle = theme === "dark" ? 0.78 : 0.7;
+
+  const btnStyle: React.CSSProperties = {
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: `1px solid ${inputBorder}`,
+    background: inputBg,
+    color: "inherit",
+    cursor: "pointer",
+  };
+
+  const linkBtnStyle: React.CSSProperties = {
+    ...btnStyle,
+    textDecoration: "none",
+    display: "inline-block",
+  };
 
   async function load(p = page) {
     setLoading(true);
@@ -144,102 +167,57 @@ export default function Studio() {
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-          alignItems: "center",
+          flexDirection: "column",
+          gap: 10,
+          marginBottom: 6,
         }}
       >
-        <h1 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>
-          Lingua Dataset Studio
-        </h1>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>
+            Lingua Dataset Studio
+          </h1>
 
+          {/* Row A: navigation */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={goHome} style={btnStyle}>
+              Accueil
+            </button>
+
+            <a href="/" style={linkBtnStyle}>
+              Apprendre
+            </a>
+
+            <a href="/conversation" style={linkBtnStyle}>
+              Conversation
+            </a>
+
+            <a href="/requests" style={linkBtnStyle}>
+              Demandes
+            </a>
+          </div>
+        </div>
+
+        {/* Row B: actions */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button
-            onClick={goHome}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              cursor: "pointer",
-            }}
-          >
-            Accueil
-          </button>
-
-          {/* ✅ AJOUT: Apprendre */}
-          <a
-            href="/"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
-            Apprendre
-          </a>
-
-          {/* ✅ AJOUT: Conversation */}
-          <a
-            href="/conversation"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
-            Conversation
-          </a>
-
-          <a
-            href="/requests"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
-            Demandes
-          </a>
-
-          <button
             onClick={() => setFiltersOpen((v) => !v)}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              cursor: "pointer",
-            }}
+            style={btnStyle}
+            aria-label="Afficher ou masquer les filtres"
           >
             ☰ Filtres
           </button>
 
           <button
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            style={{
-              padding: "8px 12px",
-              borderRadius: 10,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-              cursor: "pointer",
-            }}
+            style={btnStyle}
           >
             {theme === "light" ? "🌙 Dark" : "☀️ Light"}
           </button>
@@ -255,7 +233,7 @@ export default function Studio() {
             placeholder="Rechercher (mot ou traduction)…"
             style={{
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               flex: "1 1 260px",
               background: inputBg,
@@ -269,7 +247,7 @@ export default function Studio() {
             onChange={(e) => setSourceLanguage(e.target.value)}
             style={{
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
@@ -285,7 +263,7 @@ export default function Studio() {
             onChange={(e) => setDomain(e.target.value)}
             style={{
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
@@ -304,7 +282,7 @@ export default function Studio() {
             onChange={(e) => setAudioType(e.target.value)}
             style={{
               padding: 10,
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
@@ -318,11 +296,12 @@ export default function Studio() {
             onClick={() => load(1)}
             style={{
               padding: "10px 14px",
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
               cursor: "pointer",
+              fontWeight: 700,
             }}
           >
             Filtrer
@@ -335,7 +314,7 @@ export default function Studio() {
             }}
             style={{
               padding: "10px 14px",
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
@@ -358,13 +337,13 @@ export default function Studio() {
           style={{
             marginTop: 14,
             border: `1px solid ${cardBorder}`,
-            borderRadius: 12,
-            padding: 12,
+            borderRadius: 14,
+            padding: 14,
             background: cardBg,
           }}
         >
-          <div style={{ fontWeight: 800 }}>Aucun résultat</div>
-          <div style={{ marginTop: 6, opacity: subtle }}>
+          <div style={{ fontWeight: 900 }}>Aucun résultat</div>
+          <div style={{ marginTop: 6, opacity: subtle, lineHeight: 1.45 }}>
             Cette traduction n&apos;est pas encore disponible. Nous pouvons enregistrer ta demande et la traiter en
             priorité lors d&apos;une prochaine mise à jour.
           </div>
@@ -394,12 +373,13 @@ export default function Studio() {
             style={{
               marginTop: 10,
               padding: "10px 14px",
-              borderRadius: 10,
+              borderRadius: 12,
               border: `1px solid ${inputBorder}`,
               background: inputBg,
               color: "inherit",
               cursor: q.trim() ? "pointer" : "not-allowed",
               opacity: q.trim() ? 1 : 0.5,
+              fontWeight: 800,
             }}
           >
             Enregistrer la demande
@@ -410,7 +390,7 @@ export default function Studio() {
       )}
 
       {/* List */}
-      <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+      <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
         {sorted.map((en, idx) => {
           const n = (page - 1) * PAGE_SIZE + (idx + 1);
           return (
@@ -418,68 +398,90 @@ export default function Studio() {
               key={en.entry_id}
               style={{
                 border: `1px solid ${cardBorder}`,
-                borderRadius: 12,
-                padding: 12,
+                borderRadius: 16,
+                padding: 14,
                 background: cardBg,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 900, opacity: subtle }}>#{n}</div>
+              {/* Title row (better hierarchy) */}
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    fontWeight: 900,
+                    opacity: subtle,
+                    minWidth: 46,
+                  }}
+                >
+                  #{n}
+                </div>
 
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 16 }}>
-                      {en.source_lemma} <span style={{ opacity: subtle }}>→</span> {en.translation_primary}
-                    </div>
-                    <div style={{ fontSize: 12, opacity: subtle }}>
-                      {en.source_language} • {en.domain} • {en.review_status}
-                    </div>
+                <div style={{ flex: "1 1 260px" }}>
+                  <div style={{ fontWeight: 900, fontSize: 18, lineHeight: 1.2 }}>
+                    {en.source_lemma} <span style={{ opacity: subtle }}>→</span> {en.translation_primary}
+                  </div>
+
+                  <div style={{ fontSize: 12, opacity: subtle, marginTop: 4 }}>
+                    {en.source_language} • {en.domain} • {en.review_status}
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, opacity: subtle }}>{new Date(en.created_at).toLocaleString()}</div>
+                <div style={{ fontSize: 12, opacity: subtle, marginLeft: "auto" }}>
+                  {new Date(en.created_at).toLocaleString()}
+                </div>
               </div>
 
               {(en.example_source || en.example_target) && (
-                <div style={{ marginTop: 8, fontSize: 13 }}>
-                  <div>
-                    <b>Ex:</b> {en.example_source || ""}
-                  </div>
+                <div style={{ marginTop: 10, fontSize: 14, lineHeight: 1.4 }}>
+                  <div style={{ fontWeight: 800 }}>Ex: {en.example_source || ""}</div>
                   <div style={{ opacity: subtle }}>{en.example_target || ""}</div>
                 </div>
               )}
 
-              <div style={{ marginTop: 10 }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>Audios ({en.audios.length})</div>
-                {en.audios.length === 0 && <div style={{ fontSize: 13, opacity: subtle }}>Aucun audio</div>}
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontWeight: 900, fontSize: 13, marginBottom: 6 }}>
+                  Audios ({en.audios.length})
+                </div>
 
-                <div style={{ display: "grid", gap: 8, marginTop: 6 }}>
+                {en.audios.length === 0 && (
+                  <div style={{ fontSize: 13, opacity: subtle }}>Aucun audio</div>
+                )}
+
+                <div style={{ display: "grid", gap: 10 }}>
                   {en.audios.map((a) => (
                     <div
                       key={a.audio_id}
                       style={{
                         border: `1px solid ${theme === "dark" ? "#222" : "#f0f0f0"}`,
-                        borderRadius: 10,
-                        padding: 10,
+                        borderRadius: 14,
+                        padding: 12,
                         background: theme === "dark" ? "#0e0e0e" : "#fafafa",
                       }}
                     >
-                      <div style={{ fontSize: 12, opacity: subtle }}>
+                      <div style={{ fontSize: 12, opacity: subtle, lineHeight: 1.35 }}>
                         {a.language} • {a.audio_type} • {a.status} • {a.uploaded_by || ""}
                       </div>
 
-                      <div style={{ fontSize: 12, opacity: subtle, marginTop: 4 }}>
-                        <code>{a.storage_path}</code>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          marginTop: 6,
+                        }}
+                      >
+                        <code style={{ fontSize: 12, opacity: subtle }}>{a.storage_path}</code>
+
                         <button
                           onClick={() => navigator.clipboard.writeText(a.storage_path)}
                           style={{
-                            marginLeft: 8,
-                            padding: "2px 8px",
-                            borderRadius: 8,
+                            padding: "4px 10px",
+                            borderRadius: 10,
                             border: `1px solid ${inputBorder}`,
                             background: inputBg,
                             color: "inherit",
                             cursor: "pointer",
+                            fontWeight: 700,
                           }}
                         >
                           copier
@@ -487,9 +489,11 @@ export default function Studio() {
                       </div>
 
                       {a.publicUrl ? (
-                        <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 8 }} />
+                        <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 10 }} />
                       ) : (
-                        <div style={{ color: "crimson", marginTop: 8, fontSize: 13 }}>URL audio indisponible</div>
+                        <div style={{ color: "crimson", marginTop: 8, fontSize: 13 }}>
+                          URL audio indisponible
+                        </div>
                       )}
                     </div>
                   ))}
@@ -506,12 +510,13 @@ export default function Studio() {
           onClick={() => page > 1 && load(page - 1)}
           style={{
             padding: "10px 14px",
-            borderRadius: 10,
+            borderRadius: 12,
             border: `1px solid ${inputBorder}`,
             background: inputBg,
             color: "inherit",
             cursor: page > 1 ? "pointer" : "not-allowed",
             opacity: page > 1 ? 1 : 0.5,
+            fontWeight: 800,
           }}
           disabled={page <= 1}
         >
@@ -521,11 +526,12 @@ export default function Studio() {
           onClick={() => load(page + 1)}
           style={{
             padding: "10px 14px",
-            borderRadius: 10,
+            borderRadius: 12,
             border: `1px solid ${inputBorder}`,
             background: inputBg,
             color: "inherit",
             cursor: "pointer",
+            fontWeight: 800,
           }}
         >
           Suivant →
