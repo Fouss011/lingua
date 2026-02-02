@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type AudioItem = {
@@ -29,23 +30,17 @@ type Entry = {
 };
 
 export default function Studio() {
-  // -------- paging stable index --------
   const PAGE_SIZE = 20;
 
-  // Theme (light par défaut)
   const [theme, setTheme] = useState<"light" | "dark">("light");
-
-  // UI responsive
   const [filtersOpen, setFiltersOpen] = useState(true);
 
-  // Domains auto
   const [domains, setDomains] = useState<string[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem("lingua_theme");
     if (saved === "dark" || saved === "light") setTheme(saved);
 
-    // Mobile: replie filtres par défaut
     if (typeof window !== "undefined") {
       if (window.innerWidth < 640) setFiltersOpen(false);
     }
@@ -56,7 +51,6 @@ export default function Studio() {
     document.body.style.color = theme === "dark" ? "#ffffff" : "#000000";
     localStorage.setItem("lingua_theme", theme);
 
-    // variables utiles (pour une cohérence simple dans les pages)
     document.documentElement.style.setProperty("--bg", theme === "dark" ? "#0b0b0b" : "#ffffff");
     document.documentElement.style.setProperty("--fg", theme === "dark" ? "#ffffff" : "#000000");
     document.documentElement.style.setProperty("--card", theme === "dark" ? "#111" : "#fff");
@@ -65,7 +59,6 @@ export default function Studio() {
     document.documentElement.style.setProperty("--inputBorder", theme === "dark" ? "#333" : "#ddd");
   }, [theme]);
 
-  // Load domains (auto)
   useEffect(() => {
     (async () => {
       try {
@@ -164,61 +157,28 @@ export default function Studio() {
   return (
     <main style={{ padding: 16, maxWidth: 1100, margin: "0 auto" }}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          marginBottom: 6,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-          }}
-        >
-          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>
-            Lingua Dataset Studio
-          </h1>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>Lingua Dataset Studio</h1>
 
           {/* Row A: navigation */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={goHome} style={btnStyle}>
-              Accueil
-            </button>
+            <button onClick={goHome} style={btnStyle}>Accueil</button>
 
-            <a href="/" style={linkBtnStyle}>
-              Apprendre
-            </a>
-
-            <a href="/conversation" style={linkBtnStyle}>
-              Conversation
-            </a>
-
-            <a href="/requests" style={linkBtnStyle}>
-              Demandes
-            </a>
+            <Link href="/" style={linkBtnStyle}>Apprendre</Link>
+            <Link href="/conversation" style={linkBtnStyle}>Conversation</Link>
+            <Link href="/favorites" style={linkBtnStyle}>Favoris</Link>
+            <Link href="/requests" style={linkBtnStyle}>Demandes</Link>
           </div>
         </div>
 
         {/* Row B: actions */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
-            onClick={() => setFiltersOpen((v) => !v)}
-            style={btnStyle}
-            aria-label="Afficher ou masquer les filtres"
-          >
+          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle} aria-label="Afficher ou masquer les filtres">
             ☰ Filtres
           </button>
 
-          <button
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            style={btnStyle}
-          >
+          <button onClick={() => setTheme(theme === "light" ? "dark" : "light")} style={btnStyle}>
             {theme === "light" ? "🌙 Dark" : "☀️ Light"}
           </button>
         </div>
@@ -245,13 +205,7 @@ export default function Studio() {
           <select
             value={sourceLanguage}
             onChange={(e) => setSourceLanguage(e.target.value)}
-            style={{
-              padding: 10,
-              borderRadius: 12,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-            }}
+            style={{ padding: 10, borderRadius: 12, border: `1px solid ${inputBorder}`, background: inputBg, color: "inherit" }}
           >
             <option value="">Toutes langues</option>
             <option value="mina">mina</option>
@@ -261,35 +215,23 @@ export default function Studio() {
           <select
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
-            style={{
-              padding: 10,
-              borderRadius: 12,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-            }}
+            style={{ padding: 10, borderRadius: 12, border: `1px solid ${inputBorder}`, background: inputBg, color: "inherit" }}
           >
             <option value="">Toutes catégories</option>
             {(domains.length ? domains : ["sante", "salutation", "pharmacie"]).map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
+              <option key={d} value={d}>{d}</option>
             ))}
           </select>
 
           <select
             value={audioType}
             onChange={(e) => setAudioType(e.target.value)}
-            style={{
-              padding: 10,
-              borderRadius: 12,
-              border: `1px solid ${inputBorder}`,
-              background: inputBg,
-              color: "inherit",
-            }}
+            style={{ padding: 10, borderRadius: 12, border: `1px solid ${inputBorder}`, background: inputBg, color: "inherit" }}
           >
             <option value="">Tous types audio</option>
             <option value="word">word</option>
+            <option value="example">example</option>
+            <option value="phrase">phrase</option>
           </select>
 
           <button
@@ -333,15 +275,7 @@ export default function Studio() {
 
       {/* No results -> save missing request */}
       {!loading && items.length === 0 && (
-        <div
-          style={{
-            marginTop: 14,
-            border: `1px solid ${cardBorder}`,
-            borderRadius: 14,
-            padding: 14,
-            background: cardBg,
-          }}
-        >
+        <div style={{ marginTop: 14, border: `1px solid ${cardBorder}`, borderRadius: 14, padding: 14, background: cardBg }}>
           <div style={{ fontWeight: 900 }}>Aucun résultat</div>
           <div style={{ marginTop: 6, opacity: subtle, lineHeight: 1.45 }}>
             Cette traduction n&apos;est pas encore disponible. Nous pouvons enregistrer ta demande et la traiter en
@@ -403,17 +337,8 @@ export default function Studio() {
                 background: cardBg,
               }}
             >
-              {/* Title row (better hierarchy) */}
               <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <div
-                  style={{
-                    fontWeight: 900,
-                    opacity: subtle,
-                    minWidth: 46,
-                  }}
-                >
-                  #{n}
-                </div>
+                <div style={{ fontWeight: 900, opacity: subtle, minWidth: 46 }}>#{n}</div>
 
                 <div style={{ flex: "1 1 260px" }}>
                   <div style={{ fontWeight: 900, fontSize: 18, lineHeight: 1.2 }}>
@@ -457,39 +382,10 @@ export default function Studio() {
                         background: theme === "dark" ? "#0e0e0e" : "#fafafa",
                       }}
                     >
-                      <div style={{ fontSize: 12, opacity: subtle, lineHeight: 1.35 }}>
-                        {a.language} • {a.audio_type} • {a.status} • {a.uploaded_by || ""}
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          marginTop: 6,
-                        }}
-                      >
-                        <code style={{ fontSize: 12, opacity: subtle }}>{a.storage_path}</code>
-
-                        <button
-                          onClick={() => navigator.clipboard.writeText(a.storage_path)}
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: 10,
-                            border: `1px solid ${inputBorder}`,
-                            background: inputBg,
-                            color: "inherit",
-                            cursor: "pointer",
-                            fontWeight: 700,
-                          }}
-                        >
-                          copier
-                        </button>
-                      </div>
+                      {/* ✅ on enlève "mina • word • uploaded • ..." + storage_path + copier */}
 
                       {a.publicUrl ? (
-                        <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 10 }} />
+                        <audio controls src={a.publicUrl} style={{ width: "100%", marginTop: 2 }} />
                       ) : (
                         <div style={{ color: "crimson", marginTop: 8, fontSize: 13 }}>
                           URL audio indisponible

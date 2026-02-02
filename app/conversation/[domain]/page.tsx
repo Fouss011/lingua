@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function DomainPage({ params }: any) {
   const domain = params?.domain || "";
-  const router = useRouter();
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -25,11 +23,22 @@ export default function DomainPage({ params }: any) {
     }
   }, []);
 
+  // Apply theme CSS vars (cohérent avec les autres pages)
+  useEffect(() => {
+    document.body.style.background = theme === "dark" ? "#0b0b0b" : "#ffffff";
+    document.body.style.color = theme === "dark" ? "#ffffff" : "#000000";
+    localStorage.setItem("lingua_theme", theme);
+
+    document.documentElement.style.setProperty("--bg", theme === "dark" ? "#0b0b0b" : "#ffffff");
+    document.documentElement.style.setProperty("--fg", theme === "dark" ? "#ffffff" : "#000000");
+    document.documentElement.style.setProperty("--card", theme === "dark" ? "#111" : "#fff");
+    document.documentElement.style.setProperty("--border", theme === "dark" ? "#222" : "#eee");
+    document.documentElement.style.setProperty("--inputBg", theme === "dark" ? "#0f0f0f" : "#fff");
+    document.documentElement.style.setProperty("--inputBorder", theme === "dark" ? "#333" : "#ddd");
+  }, [theme]);
+
   function toggleTheme() {
-    const next = theme === "light" ? "dark" : "light";
-    setTheme(next);
-    localStorage.setItem("lingua_theme", next);
-    window.dispatchEvent(new StorageEvent("storage", { key: "lingua_theme", newValue: next }));
+    setTheme((t) => (t === "light" ? "dark" : "light"));
   }
 
   async function load() {
@@ -71,6 +80,7 @@ export default function DomainPage({ params }: any) {
     ...btnStyle,
     textDecoration: "none",
     display: "inline-block",
+    fontWeight: 800,
   };
 
   const cardStyle: React.CSSProperties = {
@@ -86,38 +96,54 @@ export default function DomainPage({ params }: any) {
     return intents.filter((i) => i.toLowerCase().includes(s));
   }, [intents, q]);
 
-  // Si ton schéma ne gère pas encore les intentions, on affiche une intention "general"
-  // et on redirige directement pour éviter un clic en plus.
-  useEffect(() => {
-    if (!loading && !err && domain && intents.length === 1 && intents[0] === "general") {
-      router.replace(`/conversation/${encodeURIComponent(domain)}/general`);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, err, domain, intents.join("|")]);
+  const onlyGeneral = !loading && !err && intents.length === 1 && intents[0] === "general";
 
   return (
     <main style={{ padding: 16, maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
           <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{domain}</h1>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <Link href="/" prefetch style={linkBtnStyle}>Apprendre</Link>
-            <Link href="/conversation" prefetch style={linkBtnStyle}>Conversation</Link>
-            <Link href="/requests" prefetch style={linkBtnStyle}>Demandes</Link>
+            <Link href="/" prefetch style={linkBtnStyle}>
+              Apprendre
+            </Link>
+            <Link href="/conversation" prefetch style={linkBtnStyle}>
+              Conversation
+            </Link>
+            <Link href="/favorites" prefetch style={linkBtnStyle}>
+              Favoris
+            </Link>
+            <Link href="/requests" prefetch style={linkBtnStyle}>
+              Demandes
+            </Link>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link href="/conversation" style={linkBtnStyle}>← Retour</Link>
+          <Link href="/conversation" style={linkBtnStyle}>
+            ← Retour
+          </Link>
 
-          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle}>☰ Filtres</button>
+          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle}>
+            ☰ Filtres
+          </button>
 
           <button onClick={toggleTheme} style={btnStyle}>
             {theme === "light" ? "🌙 Dark" : "☀️ Light"}
           </button>
 
-          <button onClick={load} style={{ ...btnStyle, fontWeight: 900 }}>Recharger</button>
+          <button onClick={load} style={{ ...btnStyle, fontWeight: 900 }}>
+            Recharger
+          </button>
         </div>
       </div>
 
@@ -146,32 +172,58 @@ export default function DomainPage({ params }: any) {
       </div>
       {err && <div style={{ color: "crimson", marginTop: 8 }}>{err}</div>}
 
-      <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        {filteredIntents.map((intent) => (
-          <Link
-            key={intent}
-            href={`/conversation/${encodeURIComponent(domain)}/${encodeURIComponent(intent)}`}
-            style={{ textDecoration: "none" }}
-          >
-            <button
-              style={{
-                width: "100%",
-                padding: 14,
-                borderRadius: 14,
-                border: "1px solid var(--inputBorder)",
-                background: "var(--inputBg)",
-                color: "var(--fg)",
-                cursor: "pointer",
-                fontWeight: 900,
-                textAlign: "left",
-              }}
+      {/* ✅ Fix bug "back" : plus de router.replace automatique */}
+      {onlyGeneral && (
+        <div style={{ ...cardStyle, marginTop: 12 }}>
+          <div style={{ fontWeight: 900 }}>Ce domaine n’a qu’une intention : “general”</div>
+          <div style={{ marginTop: 6, opacity: 0.75, lineHeight: 1.4 }}>
+            Clique pour ouvrir (pas de redirection automatique → plus de bug au retour).
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <Link href={`/conversation/${encodeURIComponent(domain)}/general`} style={linkBtnStyle}>
+              Ouvrir general →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {!onlyGeneral && (
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gap: 10,
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {filteredIntents.map((intent) => (
+            <Link
+              key={intent}
+              href={`/conversation/${encodeURIComponent(domain)}/${encodeURIComponent(intent)}`}
+              style={{ textDecoration: "none" }}
             >
-              {intent}
-              <div style={{ fontWeight: 500, opacity: 0.75, marginTop: 6, fontSize: 12 }}>Ouvrir les phrases</div>
-            </button>
-          </Link>
-        ))}
-      </div>
+              <button
+                style={{
+                  width: "100%",
+                  padding: 14,
+                  borderRadius: 14,
+                  border: "1px solid var(--inputBorder)",
+                  background: "var(--inputBg)",
+                  color: "var(--fg)",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textAlign: "left",
+                }}
+              >
+                {intent}
+                <div style={{ fontWeight: 500, opacity: 0.75, marginTop: 6, fontSize: 12 }}>
+                  Ouvrir les phrases
+                </div>
+              </button>
+            </Link>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

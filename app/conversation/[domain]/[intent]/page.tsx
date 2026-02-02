@@ -10,17 +10,41 @@ type Row = {
   order_in_intent?: number | null;
   source_language?: string | null;
 
-  // champs possibles venant de la DB
   source_lemma?: string | null;
   translation_primary?: string | null;
   example_source?: string | null;
   example_target?: string | null;
 
-  // champs possibles venant de l'API enrichie
   text_fr?: string | null;
   text_src?: string | null;
   audio_url?: string | null;
 };
+
+type FavItem = {
+  entry_id: string;
+  domain: string;
+  intent: string;
+  fr: string;
+  src: string;
+  added_at: string;
+};
+
+const FAV_KEY = "lingua_favorites_v1";
+
+function readFavs(): FavItem[] {
+  try {
+    const raw = localStorage.getItem(FAV_KEY);
+    if (!raw) return [];
+    const j = JSON.parse(raw);
+    return Array.isArray(j) ? j : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeFavs(items: FavItem[]) {
+  localStorage.setItem(FAV_KEY, JSON.stringify(items));
+}
 
 export default function IntentPhrasesPage({ params }: any) {
   const domain = params?.domain || "";
@@ -31,16 +55,19 @@ export default function IntentPhrasesPage({ params }: any) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
-
   const [q, setQ] = useState("");
 
-  // Theme init
+  const [favIds, setFavIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     const saved = localStorage.getItem("lingua_theme");
     if (saved === "dark" || saved === "light") setTheme(saved);
+
+    // init fav set
+    const favs = readFavs();
+    setFavIds(new Set(favs.map((f) => f.entry_id)));
   }, []);
 
-  // Apply theme CSS vars (comme tes autres pages)
   useEffect(() => {
     document.body.style.background = theme === "dark" ? "#0b0b0b" : "#ffffff";
     document.body.style.color = theme === "dark" ? "#ffffff" : "#000000";
@@ -74,6 +101,7 @@ export default function IntentPhrasesPage({ params }: any) {
     ...btnStyle,
     textDecoration: "none",
     display: "inline-block",
+    fontWeight: 800,
   };
 
   async function load(search = "") {
@@ -110,13 +138,48 @@ export default function IntentPhrasesPage({ params }: any) {
     if (!s) return rows;
 
     return rows.filter((r) => {
-      const fr =
-        (r.text_fr || r.example_target || r.translation_primary || "").toString().toLowerCase();
-      const src =
-        (r.text_src || r.example_source || r.source_lemma || "").toString().toLowerCase();
+      const fr = (r.text_fr || r.example_target || r.translation_primary || "")
+        .toString()
+        .toLowerCase();
+      const src = (r.text_src || r.example_source || r.source_lemma || "")
+        .toString()
+        .toLowerCase();
       return fr.includes(s) || src.includes(s);
     });
   }, [rows, q]);
+
+  function toggleFav(row: Row) {
+    const fr = (row.text_fr || row.example_target || row.translation_primary || "").toString().trim();
+    const src = (row.text_src || row.example_source || row.source_lemma || "").toString().trim();
+
+    const favs = readFavs();
+    const exists = favs.some((f) => f.entry_id === row.entry_id);
+
+    if (exists) {
+      const next = favs.filter((f) => f.entry_id !== row.entry_id);
+      writeFavs(next);
+      const s = new Set(favIds);
+      s.delete(row.entry_id);
+      setFavIds(s);
+      return;
+    }
+
+    const item: FavItem = {
+      entry_id: row.entry_id,
+      domain: row.domain || domain,
+      intent: (row.intent || intent || "").toString(),
+      fr,
+      src,
+      added_at: new Date().toISOString(),
+    };
+
+    const next = [item, ...favs].slice(0, 500); // petit garde-fou
+    writeFavs(next);
+
+    const s = new Set(favIds);
+    s.add(row.entry_id);
+    setFavIds(s);
+  }
 
   return (
     <main style={{ padding: 16, maxWidth: 1100, margin: "0 auto" }}>
@@ -128,6 +191,9 @@ export default function IntentPhrasesPage({ params }: any) {
         <Link href="/conversation" style={linkBtnStyle}>
           Domaines
         </Link>
+        <Link href="/favorites" style={linkBtnStyle}>
+          Favoris
+        </Link>
 
         <button
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -137,7 +203,6 @@ export default function IntentPhrasesPage({ params }: any) {
         </button>
       </div>
 
-      {/* Title */}
       <h1 style={{ fontSize: 22, fontWeight: 900, margin: "14px 0 10px" }}>{intent}</h1>
 
       {/* Search bar */}
@@ -156,10 +221,7 @@ export default function IntentPhrasesPage({ params }: any) {
             color: "var(--fg)",
           }}
         />
-        <button
-          onClick={() => load(q)}
-          style={{ ...btnStyle, padding: "10px 14px", fontWeight: 800 }}
-        >
+        <button onClick={() => load(q)} style={{ ...btnStyle, padding: "10px 14px", fontWeight: 800 }}>
           Rechercher
         </button>
       </div>
@@ -169,25 +231,41 @@ export default function IntentPhrasesPage({ params }: any) {
       </div>
       {err && <div style={{ color: "crimson", marginTop: 8 }}>{err}</div>}
 
-      {/* List */}
       <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
         {filtered.map((r, i) => {
-          const fr =
-            (r.text_fr || r.example_target || r.translation_primary || "").toString().trim();
-          const src =
-            (r.text_src || r.example_source || r.source_lemma || "").toString().trim();
+          const fr = (r.text_fr || r.example_target || r.translation_primary || "").toString().trim();
+          const src = (r.text_src || r.example_source || r.source_lemma || "").toString().trim();
+          const isFav = favIds.has(r.entry_id);
 
           return (
             <div key={r.entry_id} style={cardStyle}>
-              <div style={{ fontWeight: 900, lineHeight: 1.35 }}>
-                {i + 1}. {fr || "(texte manquant)"}
-              </div>
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 900, lineHeight: 1.35 }}>
+                    {i + 1}. {fr || "(texte manquant)"}
+                  </div>
 
-              {src && (
-                <div style={{ marginTop: 6, opacity: 0.75, fontSize: 13 }}>
-                  {(r.source_language ? `${r.source_language} • ` : "") + src}
+                  {src && (
+                    <div style={{ marginTop: 6, opacity: 0.75, fontSize: 13 }}>
+                      {(r.source_language ? `${r.source_language} • ` : "") + src}
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* ⭐ Favori */}
+                <button
+                  onClick={() => toggleFav(r)}
+                  title={isFav ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  style={{
+                    ...btnStyle,
+                    padding: "8px 10px",
+                    fontWeight: 900,
+                    opacity: isFav ? 1 : 0.85,
+                  }}
+                >
+                  {isFav ? "⭐" : "☆"}
+                </button>
+              </div>
 
               {r.audio_url ? (
                 <audio controls src={r.audio_url} style={{ width: "100%", marginTop: 10 }} />
