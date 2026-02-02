@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export default function DomainPage({ params }: any) {
   const domain = params?.domain || "";
+  const router = useRouter();
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -41,7 +43,6 @@ export default function DomainPage({ params }: any) {
       if (!r.ok) throw new Error(j?.error || "Load failed");
 
       const arr = Array.isArray(j.intents) ? j.intents : [];
-      // nettoie + retire les vides
       const cleaned = arr.map((x: any) => String(x || "").trim()).filter(Boolean);
       setIntents(cleaned);
     } catch (e: any) {
@@ -85,44 +86,41 @@ export default function DomainPage({ params }: any) {
     return intents.filter((i) => i.toLowerCase().includes(s));
   }, [intents, q]);
 
+  // Si ton schéma ne gère pas encore les intentions, on affiche une intention "general"
+  // et on redirige directement pour éviter un clic en plus.
+  useEffect(() => {
+    if (!loading && !err && domain && intents.length === 1 && intents[0] === "general") {
+      router.replace(`/conversation/${encodeURIComponent(domain)}/general`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, err, domain, intents.join("|")]);
+
   return (
     <main style={{ padding: 16, maxWidth: 1100, margin: "0 auto" }}>
-      {/* Header */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 6 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>
-            {domain}
-          </h1>
+          <h1 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{domain}</h1>
 
-          {/* nav */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <a href="/" style={linkBtnStyle}>Apprendre</a>
-            <a href="/conversation" style={linkBtnStyle}>Conversation</a>
-            <a href="/requests" style={linkBtnStyle}>Demandes</a>
+            <Link href="/" prefetch style={linkBtnStyle}>Apprendre</Link>
+            <Link href="/conversation" prefetch style={linkBtnStyle}>Conversation</Link>
+            <Link href="/requests" prefetch style={linkBtnStyle}>Demandes</Link>
           </div>
         </div>
 
-        {/* actions */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Link href="/conversation" style={linkBtnStyle}>
-            ← Retour
-          </Link>
+          <Link href="/conversation" style={linkBtnStyle}>← Retour</Link>
 
-          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle}>
-            ☰ Filtres
-          </button>
+          <button onClick={() => setFiltersOpen((v) => !v)} style={btnStyle}>☰ Filtres</button>
 
           <button onClick={toggleTheme} style={btnStyle}>
             {theme === "light" ? "🌙 Dark" : "☀️ Light"}
           </button>
 
-          <button onClick={load} style={{ ...btnStyle, fontWeight: 900 }}>
-            Recharger
-          </button>
+          <button onClick={load} style={{ ...btnStyle, fontWeight: 900 }}>Recharger</button>
         </div>
       </div>
 
-      {/* Filtres */}
       {filtersOpen && (
         <div style={{ ...cardStyle, marginTop: 12 }}>
           <div style={{ fontWeight: 900, marginBottom: 8 }}>Intentions dans “{domain}”</div>
@@ -140,9 +138,6 @@ export default function DomainPage({ params }: any) {
               color: "var(--fg)",
             }}
           />
-          <div style={{ marginTop: 8, opacity: 0.75, fontSize: 12 }}>
-            Astuce: ajoute des valeurs `intent` dans la table `entries` pour voir des menus ici.
-          </div>
         </div>
       )}
 
@@ -151,15 +146,7 @@ export default function DomainPage({ params }: any) {
       </div>
       {err && <div style={{ color: "crimson", marginTop: 8 }}>{err}</div>}
 
-      {/* Liste intents */}
-      <div
-        style={{
-          marginTop: 12,
-          display: "grid",
-          gap: 10,
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-        }}
-      >
+      <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
         {filteredIntents.map((intent) => (
           <Link
             key={intent}
@@ -180,27 +167,10 @@ export default function DomainPage({ params }: any) {
               }}
             >
               {intent}
-              <div style={{ fontWeight: 500, opacity: 0.75, marginTop: 6, fontSize: 12 }}>
-                Ouvrir les phrases
-              </div>
+              <div style={{ fontWeight: 500, opacity: 0.75, marginTop: 6, fontSize: 12 }}>Ouvrir les phrases</div>
             </button>
           </Link>
         ))}
-
-        {!loading && filteredIntents.length === 0 && (
-          <div style={cardStyle}>
-            <div style={{ fontWeight: 900 }}>Aucune intention trouvée</div>
-            <div style={{ marginTop: 6, opacity: 0.75, lineHeight: 1.4 }}>
-              Soit il n’y a pas encore de valeurs dans <code>entries.intent</code> pour ce domaine,
-              soit les valeurs sont vides.
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Link href="/conversation" style={{ color: "inherit", opacity: 0.85 }}>
-                ← Retour à la liste des domaines
-              </Link>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
